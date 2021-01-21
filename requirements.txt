@@ -1,0 +1,5 @@
+django
+django_rq
+psycopg2
+redis
+requests

@@ -1,0 +1,53 @@
+version: "3.9"
+
+services:
+  db:
+    image: postgres
+    restart: always
+    environment:
+      - POSTGRES_DB=checks_api
+      - POSTGRES_USER=checks_api_user
+      - POSTGRES_PASSWORD=everybodykissmybody
+    ports:
+      - '5432:5432'
+    expose:
+      - '5432'
+  redis:
+    image: bitnami/redis:latest
+    restart: always
+    environment:
+      # ALLOW_EMPTY_PASSWORD is recommended only for development.
+      - ALLOW_EMPTY_PASSWORD=yes
+      - REDIS_DISABLE_COMMANDS=FLUSHDB,FLUSHALL
+    ports:
+      - '6379:6379'
+    expose:
+      - '6379'
+  wkhtmltopdf:
+    image: openlabs/docker-wkhtmltopdf-aas
+    restart: always
+    ports:
+      - "898:80"
+    expose:
+      - "898"
+  web:
+    build: .
+    image: app
+    command: bash -c "python manage.py migrate && python manage.py runserver 0.0.0.0:80"
+    restart: always
+    volumes:
+      - .:/code
+    ports:
+      - "80:80"
+    links:
+      - db
+      - redis
+      - wkhtmltopdf
+  rq_worker:
+    image: app
+    command: python manage.py rqworker
+    restart: always
+    volumes:
+      - .:/code
+    depends_on:
+      - web
